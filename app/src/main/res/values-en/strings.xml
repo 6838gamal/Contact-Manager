@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Contact Hub</string>
+    <string name="app_subtitle">Smart Contact &amp; vCard Manager</string>
+
+    <!-- Navigation -->
+    <string name="nav_contacts">Contacts</string>
+    <string name="nav_transfer">Import &amp; Export</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Main Screen -->
+    <string name="search_hint">Search by name, phone, or company…</string>
+    <string name="add_contact">Add Contact</string>
+    <string name="edit_contact">Edit Contact</string>
+    <string name="sync_device_contacts">Sync Phonebook</string>
+    <string name="syncing_contacts">Syncing…</string>
+    <string name="select_all">Select All</string>
+    <string name="clear_selection">Clear</string>
+    <string name="selected_count">%1$d selected</string>
+    <string name="export_selected">Export Selected</string>
+    <string name="delete_selected">Delete Selected</string>
+
+    <!-- Empty State -->
+    <string name="empty_contacts_title">No contacts yet</string>
+    <string name="empty_contacts_subtitle">Add a new contact, sync with your phonebook, or import a .vcf file</string>
+    <string name="empty_search_title">No matching contacts</string>
+    <string name="empty_search_subtitle">Try searching with a different name or number</string>
+
+    <!-- Permissions -->
+    <string name="permission_contacts_title">Contacts Permission Required</string>
+    <string name="permission_contacts_desc">To sync with your device phonebook so contacts automatically appear in WhatsApp and Telegram, please allow read and write contacts access.</string>
+    <string name="permission_grant_button">Grant Permission</string>
+    <string name="permission_denied_msg">Contacts permission denied. You can still use local storage or enable permission in system settings.</string>
+
+    <!-- Form Fields -->
+    <string name="field_name">Full Name *</string>
+    <string name="field_phone">Phone Number (e.g. +966501234567) *</string>
+    <string name="field_email">Email (Optional)</string>
+    <string name="field_company">Company / Organization (Optional)</string>
+    <string name="field_notes">Notes (Optional)</string>
+    <string name="choose_photo">Choose Photo</string>
+    <string name="remove_photo">Remove Photo</string>
+    <string name="save_to_phonebook_also">Also save to device phonebook (auto-visible in WhatsApp)</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="close">Close</string>
+
+    <!-- Validation -->
+    <string name="error_name_required">Please enter a contact name</string>
+    <string name="error_phone_required">Please enter a phone number</string>
+    <string name="error_phone_invalid">Invalid phone number. Prefer international format like +966501234567</string>
+    <string name="error_email_invalid">Invalid email address format</string>
+
+    <!-- Export & Share -->
+    <string name="export_sheet_title">Export &amp; Share Contacts (vCard 3.0)</string>
+    <string name="export_sheet_subtitle">Creates a .vcf file shared securely via FileProvider</string>
+    <string name="export_all_action">Export All Contacts (%1$d)</string>
+    <string name="export_selected_action">Export Selected (%1$d)</string>
+    <string name="share_general">General Share (Any App)</string>
+    <string name="share_whatsapp">Send to WhatsApp</string>
+    <string name="share_whatsapp_business">Send to WhatsApp Business</string>
+    <string name="share_telegram">Send to Telegram</string>
+    <string name="app_installed">Installed</string>
+    <string name="app_not_installed">Not installed (Open Play Store)</string>
+
+    <!-- Import -->
+    <string name="import_title">Import vCard (.vcf)</string>
+    <string name="import_pick_file">Pick .vcf File from Device</string>
+    <string name="import_preview_header">Preview Contacts Before Import</string>
+    <string name="import_total_found">Total found in file: %1$d</string>
+    <string name="import_new_count">New contacts: %1$d</string>
+    <string name="import_duplicate_count">Duplicates (skipped): %1$d</string>
+    <string name="import_also_phonebook">Also add new contacts to device phonebook</string>
+    <string name="import_confirm">Confirm Import</string>
+    <string name="import_success">Imported %1$d contacts (%2$d duplicates skipped)</string>
+    <string name="import_empty_error">No valid contacts found in this file</string>
+
+    <!-- WhatsApp & QR -->
+    <string name="open_whatsapp_title">Open WhatsApp Chat</string>
+    <string name="open_whatsapp_normal">WhatsApp</string>
+    <string name="open_whatsapp_business">WhatsApp Business</string>
+    <string name="qr_code_title">Contact QR Code</string>
+    <string name="qr_code_subtitle">Scan with any phone camera to add this contact instantly</string>
+    <string name="share_vcard_single">Share as vCard (.vcf)</string>
+
+    <!-- Settings, Stats & Backup -->
+    <string name="stats_title">Usage Statistics</string>
+    <string name="stat_total_contacts">Total Contacts</string>
+    <string name="stat_synced_contacts">Synced to Phone</string>
+    <string name="stat_exported">vCards Exported</string>
+    <string name="stat_imported">Contacts Imported</string>
+    <string name="stat_whatsapp_opened">WhatsApp Chats</string>
+    <string name="backup_restore_title">Backup &amp; Restore</string>
+    <string name="backup_create">Create Full Backup (.vcf)</string>
+    <string name="backup_restore">Restore from Backup (.vcf)</string>
+    <string name="last_backup_label">Last backup: %1$s</string>
+    <string name="never_backed_up">No backup created yet</string>
+    <string name="language_title">Interface Language &amp; Direction</string>
+    <string name="language_arabic">العربية (RTL)</string>
+    <string name="language_english">English (LTR)</string>
+    <string name="privacy_note_title">Privacy &amp; Integration Note</string>
+    <string name="privacy_note_body">All data stays locally on your device. WhatsApp and Telegram databases are private and cannot be read directly without root; we use standard vCard (.vcf) sharing and ContactsContract sync so saved contacts appear automatically.</string>
+
+    <!-- General Messages -->
+    <string name="msg_contact_saved">Contact saved successfully</string>
+    <string name="msg_contact_deleted">Contact deleted</string>
+    <string name="msg_sync_done">Synced %1$d contacts from phonebook</string>
+    <string name="msg_backup_saved">Backup saved successfully</string>
+    <string name="msg_export_empty">No contacts available to export</string>
+    <string name="msg_error_generic">Operation failed: %1$s</string>
+</resources>

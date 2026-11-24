@@ -1,0 +1,6 @@
+{
+  "name": "Contact Hub",
+  "description": "Local-first Android contact manager with vCard 3.0 export/import, WhatsApp, WhatsApp Business & Telegram sharing, phonebook sync, and QR codes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
