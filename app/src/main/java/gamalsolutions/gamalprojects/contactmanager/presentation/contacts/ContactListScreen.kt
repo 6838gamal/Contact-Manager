@@ -2,6 +2,7 @@ package gamalsolutions.gamalprojects.contactmanager.presentation.contacts
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,9 +17,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -44,18 +48,24 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import gamalsolutions.gamalprojects.R
 import gamalsolutions.gamalprojects.contactmanager.data.model.Contact
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactCategory
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactPlatform
 import gamalsolutions.gamalprojects.contactmanager.presentation.components.ContactItem
 import gamalsolutions.gamalprojects.contactmanager.presentation.components.ContactsPermissionCard
 import gamalsolutions.gamalprojects.contactmanager.utils.PermissionHelper
 
 /**
- * الشاشة الرئيسية لقائمة جهات الاتصال مع البحث الفوري والتصفية والتحديد المتعدد.
+ * الشاشة الرئيسية لقائمة جهات الاتصال مع البحث الفوري، التصفية حسب المنصة والتصنيف والمفضلة، والتحديد المتعدد.
  */
 @Composable
 fun ContactListScreen(
     state: ContactListState,
     onSearchQueryChange: (String) -> Unit,
     onToggleSyncedFilter: () -> Unit,
+    onPlatformFilterChange: (ContactPlatform) -> Unit,
+    onCategoryFilterChange: (ContactCategory?) -> Unit,
+    onToggleFavoritesFilter: () -> Unit,
+    onToggleFavorite: (Contact) -> Unit,
     onToggleSelection: (Long) -> Unit,
     onEditContact: (Contact) -> Unit,
     onDeleteContact: (Contact) -> Unit,
@@ -80,7 +90,6 @@ fun ContactListScreen(
                 .fillMaxSize()
                 .widthIn(max = 720.dp)
         ) {
-            // شريط البحث الفوري
             OutlinedTextField(
                 value = state.searchQuery,
                 onValueChange = onSearchQueryChange,
@@ -110,34 +119,82 @@ fun ContactListScreen(
                 shape = MaterialTheme.shapes.large,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
                     .testTag("search_contacts_input")
             )
 
-            // شرائح التصفية وملخص العدد
+            // شريط تصفية المنصة (الكل، واتساب، واتساب الأعمال، تيليجرام)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ContactPlatform.entries.forEach { plat ->
+                    val label = if (plat == ContactPlatform.ALL) {
+                        "${stringResource(plat.labelRes)} (${state.stats.totalContacts})"
+                    } else {
+                        stringResource(plat.labelRes)
+                    }
+                    FilterChip(
+                        selected = state.selectedPlatformFilter == plat,
+                        onClick = { onPlatformFilterChange(plat) },
+                        label = { Text(label) },
+                        modifier = Modifier.testTag("filter_platform_${plat.storageKey.lowercase()}")
+                    )
+                }
+            }
+
+            // شريط تصفية المفضلة، المتزامنة، والتصنيفات
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 FilterChip(
-                    selected = !state.showOnlySynced,
-                    onClick = { if (state.showOnlySynced) onToggleSyncedFilter() },
-                    label = {
-                        Text("${stringResource(R.string.nav_contacts)} (${state.stats.totalContacts})")
+                    selected = state.onlyFavoritesFilter,
+                    onClick = onToggleFavoritesFilter,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
                     },
-                    modifier = Modifier.testTag("filter_all_chip")
+                    label = { Text(stringResource(R.string.filter_favorites)) },
+                    modifier = Modifier.testTag("filter_favorites_chip")
                 )
                 FilterChip(
                     selected = state.showOnlySynced,
-                    onClick = { if (!state.showOnlySynced) onToggleSyncedFilter() },
+                    onClick = onToggleSyncedFilter,
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Sync,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    },
                     label = {
                         Text("${stringResource(R.string.stat_synced_contacts)} (${state.stats.syncedContacts})")
                     },
                     modifier = Modifier.testTag("filter_synced_chip")
                 )
+                ContactCategory.entries.forEach { cat ->
+                    val isSelected = state.selectedCategoryFilter == cat
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = {
+                            onCategoryFilterChange(if (isSelected) null else cat)
+                        },
+                        label = { Text(stringResource(cat.labelRes)) },
+                        modifier = Modifier.testTag("filter_category_${cat.storageKey.lowercase()}")
+                    )
+                }
             }
 
             AnimatedVisibility(visible = !hasPermissions) {
@@ -151,6 +208,12 @@ fun ContactListScreen(
                 )
             }
 
+            val hasActiveFilters = state.searchQuery.isNotBlank() ||
+                state.selectedPlatformFilter != ContactPlatform.ALL ||
+                state.selectedCategoryFilter != null ||
+                state.onlyFavoritesFilter ||
+                state.showOnlySynced
+
             when {
                 state.isLoading -> {
                     Box(
@@ -163,7 +226,7 @@ fun ContactListScreen(
 
                 state.filteredContacts.isEmpty() -> {
                     EmptyContactsState(
-                        isSearching = state.searchQuery.isNotBlank(),
+                        isSearching = hasActiveFilters,
                         modifier = Modifier.fillMaxSize()
                     )
                 }
@@ -198,6 +261,7 @@ fun ContactListScreen(
                                     }
                                 },
                                 onLongClick = { onToggleSelection(contact.id) },
+                                onToggleFavorite = { onToggleFavorite(contact) },
                                 onWhatsAppClick = { onWhatsAppClick(contact) },
                                 onQrClick = { onQrClick(contact) },
                                 onShareSingleClick = { onShareSingleClick(contact) },

@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import gamalsolutions.gamalprojects.R
 import gamalsolutions.gamalprojects.contactmanager.data.model.Contact
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactCategory
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactPlatform
 import gamalsolutions.gamalprojects.contactmanager.data.repository.ContactRepository
 import gamalsolutions.gamalprojects.contactmanager.utils.VCardHelper
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +24,9 @@ data class EditContactState(
     val company: String = "",
     val notes: String = "",
     val photoUri: String? = null,
+    val category: ContactCategory = ContactCategory.GENERAL,
+    val preferredPlatform: ContactPlatform = ContactPlatform.ALL,
+    val isFavorite: Boolean = false,
     val systemContactId: Long? = null,
     val isSyncedToDevice: Boolean = false,
     val alsoSaveToPhonebook: Boolean = true,
@@ -32,7 +37,7 @@ data class EditContactState(
 )
 
 /**
- * ViewModel لإضافة أو تعديل جهة اتصال مع التحقق الفوري من المدخلات.
+ * ViewModel لإضافة أو تعديل جهة اتصال مع التنظيم (التصنيف، المنصة المفضلة، المفضلة) والتحقق الفوري.
  */
 class EditContactViewModel(
     private val repository: ContactRepository
@@ -57,6 +62,9 @@ class EditContactViewModel(
                     company = contact.company,
                     notes = contact.notes,
                     photoUri = contact.photoUri,
+                    category = contact.category,
+                    preferredPlatform = contact.preferredPlatform,
+                    isFavorite = contact.isFavorite,
                     systemContactId = contact.systemContactId,
                     isSyncedToDevice = contact.isSyncedToDevice,
                     alsoSaveToPhonebook = contact.isSyncedToDevice
@@ -87,6 +95,18 @@ class EditContactViewModel(
 
     fun onPhotoSelected(uriString: String?) {
         _state.update { it.copy(photoUri = uriString) }
+    }
+
+    fun onCategoryChange(category: ContactCategory) {
+        _state.update { it.copy(category = category) }
+    }
+
+    fun onPlatformChange(platform: ContactPlatform) {
+        _state.update { it.copy(preferredPlatform = platform) }
+    }
+
+    fun onFavoriteChange(isFavorite: Boolean) {
+        _state.update { it.copy(isFavorite = isFavorite) }
     }
 
     fun onAlsoSaveToPhonebookChange(checked: Boolean) {
@@ -137,6 +157,9 @@ class EditContactViewModel(
                 company = current.company.trim(),
                 notes = current.notes.trim(),
                 photoUri = current.photoUri,
+                category = current.category,
+                preferredPlatform = current.preferredPlatform,
+                isFavorite = current.isFavorite,
                 systemContactId = current.systemContactId,
                 isSyncedToDevice = current.isSyncedToDevice
             )

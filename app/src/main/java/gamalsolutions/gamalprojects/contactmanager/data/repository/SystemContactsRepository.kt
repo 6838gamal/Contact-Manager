@@ -5,6 +5,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.provider.ContactsContract
 import gamalsolutions.gamalprojects.contactmanager.data.model.Contact
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactPlatform
 import gamalsolutions.gamalprojects.contactmanager.utils.PermissionHelper
 import gamalsolutions.gamalprojects.contactmanager.utils.VCardHelper
 import kotlinx.coroutines.Dispatchers
@@ -12,7 +13,8 @@ import kotlinx.coroutines.withContext
 
 /**
  * مستودع التعامل مع دفتر هاتف الجهاز عبر ContactsContract.
- * ملاحظة: إضافة جهة اتصال إلى دفتر الهاتف يجعلها متاحة تلقائياً في WhatsApp و Telegram.
+ * ملاحظة: يتم الكشف عن ارتباط الجهة بحسابات واتساب أو واتساب الأعمال أو تيليجرام عبر RawContacts.ACCOUNT_TYPE
+ * بدون أي صلاحيات إضافية خارج READ_CONTACTS.
  */
 class SystemContactsRepository(private val context: Context) {
 
@@ -27,6 +29,7 @@ class SystemContactsRepository(private val context: Context) {
         try {
             val emailsByContactId = loadEmailsMap()
             val companiesByContactId = loadCompaniesMap()
+            val platformsByContactId = loadDetectedPlatformsMap()
             val contactsMap = linkedMapOf<String, Contact>()
 
             val projection = arrayOf(
@@ -62,6 +65,7 @@ class SystemContactsRepository(private val context: Context) {
                             email = emailsByContactId[sysId].orEmpty(),
                             company = companiesByContactId[sysId].orEmpty(),
                             photoUri = photoUri,
+                            preferredPlatform = platformsByContactId[sysId] ?: ContactPlatform.ALL,
                             systemContactId = sysId,
                             isSyncedToDevice = true
                         )
@@ -165,6 +169,47 @@ class SystemContactsRepository(private val context: Context) {
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    private fun loadDetectedPlatformsMap(): Map<Long, ContactPlatform> {
+        val map = mutableMapOf<Long, ContactPlatform>()
+        try {
+            val projection = arrayOf(
+                ContactsContract.RawContacts.CONTACT_ID,
+                ContactsContract.RawContacts.ACCOUNT_TYPE
+            )
+            contentResolver.query(
+                ContactsContract.RawContacts.CONTENT_URI,
+                projection,
+                null,
+                null,
+                null
+            )?.use { cursor ->
+                val idIdx = cursor.getColumnIndex(ContactsContract.RawContacts.CONTACT_ID)
+                val accIdx = cursor.getColumnIndex(ContactsContract.RawContacts.ACCOUNT_TYPE)
+                if (idIdx < 0 || accIdx < 0) return map
+
+                while (cursor.moveToNext()) {
+                    val contactId = cursor.getLong(idIdx)
+                    val accountType = cursor.getString(accIdx).orEmpty()
+                    val detected = when {
+                        accountType.contains("com.whatsapp.w4b", ignoreCase = true) ->
+                            ContactPlatform.WHATSAPP_BUSINESS
+                        accountType.contains("com.whatsapp", ignoreCase = true) ->
+                            ContactPlatform.WHATSAPP
+                        accountType.contains("org.telegram", ignoreCase = true) ->
+                            ContactPlatform.TELEGRAM
+                        else -> null
+                    }
+                    if (detected != null && !map.containsKey(contactId)) {
+                        map[contactId] = detected
+                    }
+                }
+            }
+        } catch (_: Exception) {
+            // تجاهل أي قيود مزود جهات اتصال مخصصة من الشركة المصنعة
+        }
+        return map
     }
 
     private fun loadEmailsMap(): Map<Long, String> {

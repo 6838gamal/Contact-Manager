@@ -1,11 +1,17 @@
 package gamalsolutions.gamalprojects.contactmanager.data.repository
 
 import gamalsolutions.gamalprojects.contactmanager.data.local.ContactDao
+import gamalsolutions.gamalprojects.contactmanager.data.local.ContactEntity
 import gamalsolutions.gamalprojects.contactmanager.data.local.StatsPreferences
 import gamalsolutions.gamalprojects.contactmanager.data.local.StoredPreferences
 import gamalsolutions.gamalprojects.contactmanager.data.local.toDomain
 import gamalsolutions.gamalprojects.contactmanager.data.local.toEntity
 import gamalsolutions.gamalprojects.contactmanager.data.model.Contact
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactCategory
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactPlatform
+import gamalsolutions.gamalprojects.contactmanager.data.model.DuplicateStrategy
+import gamalsolutions.gamalprojects.contactmanager.data.model.ImportOptions
+import gamalsolutions.gamalprojects.contactmanager.data.model.ImportSummary
 import gamalsolutions.gamalprojects.contactmanager.utils.VCardHelper
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -110,6 +116,51 @@ class ContactRepository(
         }
     }
 
+    suspend fun updateCategoryForIds(ids: List<Long>, category: ContactCategory): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                if (ids.isNotEmpty()) {
+                    contactDao.updateCategoryForIds(
+                        ids = ids,
+                        category = category.storageKey,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                }
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun updatePlatformForIds(ids: List<Long>, platform: ContactPlatform): Result<Unit> =
+        withContext(Dispatchers.IO) {
+            try {
+                if (ids.isNotEmpty()) {
+                    contactDao.updatePlatformForIds(
+                        ids = ids,
+                        platform = platform.storageKey,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                }
+                Result.success(Unit)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+    suspend fun toggleFavorite(contact: Contact): Result<Unit> = withContext(Dispatchers.IO) {
+        try {
+            contactDao.updateFavorite(
+                id = contact.id,
+                isFavorite = !contact.isFavorite,
+                updatedAt = System.currentTimeMillis()
+            )
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     /**
      * مزامنة جهات الاتصال من دفتر هاتف الجهاز إلى قاعدة البيانات المحلية مع منع التكرار.
      */
@@ -140,40 +191,107 @@ class ContactRepository(
         }
     }
 
-    suspend fun insertImportedContacts(
+    /**
+     * استيراد الجهات المختارة مع خيارات التصنيف، وسم المنصة (واتساب/تيليجرام)، البادئة، وسياسة التكرار.
+     */
+    suspend fun importContactsWithOptions(
         contacts: List<Contact>,
-        alsoSaveToPhonebook: Boolean
-    ): Result<Int> = withContext(Dispatchers.IO) {
+        options: ImportOptions
+    ): Result<ImportSummary> = withContext(Dispatchers.IO) {
         try {
             val existingPhones = contactDao.getAllNormalizedPhones().toMutableSet()
-            val entities = mutableListOf<gamalsolutions.gamalprojects.contactmanager.data.local.ContactEntity>()
+            val seenInBatch = mutableSetOf<String>()
+            val newEntities = mutableListOf<ContactEntity>()
+            var updatedCount = 0
+            var skippedCount = 0
+            val prefix = options.namePrefix.trim()
 
-            for (contact in contacts) {
-                val normalized = VCardHelper.normalizePhone(contact.phone)
-                if (normalized.isNotBlank() && existingPhones.add(normalized)) {
-                    var synced = false
-                    var sysId: Long? = null
-                    if (alsoSaveToPhonebook) {
-                        val phonebookRes = systemContactsRepository.insertIntoDevicePhonebook(contact)
-                        if (phonebookRes.isSuccess) {
-                            synced = true
-                            sysId = phonebookRes.getOrNull()
-                        }
-                    }
-                    entities.add(
-                        contact.copy(
-                            isSyncedToDevice = synced,
-                            systemContactId = sysId
-                        ).toEntity(normalized)
-                    )
+            for (rawContact in contacts) {
+                val normalized = VCardHelper.normalizePhone(rawContact.phone)
+                if (normalized.isBlank() || !seenInBatch.add(normalized)) {
+                    skippedCount++
+                    continue
                 }
+
+                val finalName = if (prefix.isNotEmpty() && !rawContact.name.startsWith(prefix)) {
+                    "$prefix ${rawContact.name.trim()}"
+                } else {
+                    rawContact.name.trim()
+                }
+                val resolvedCategory = if (options.assignCategory != ContactCategory.GENERAL) {
+                    options.assignCategory
+                } else {
+                    rawContact.category
+                }
+                val resolvedPlatform = if (options.sourcePlatform != ContactPlatform.ALL) {
+                    options.sourcePlatform
+                } else {
+                    rawContact.preferredPlatform
+                }
+
+                if (existingPhones.contains(normalized)) {
+                    if (options.duplicateStrategy == DuplicateStrategy.UPDATE_EXISTING) {
+                        val existing = contactDao.getContactByNormalizedPhone(normalized)
+                        if (existing != null) {
+                            val updatedEntity = existing.copy(
+                                name = finalName.ifBlank { existing.name },
+                                email = rawContact.email.ifBlank { existing.email },
+                                company = rawContact.company.ifBlank { existing.company },
+                                notes = rawContact.notes.ifBlank { existing.notes },
+                                category = resolvedCategory.storageKey,
+                                preferredPlatform = resolvedPlatform.storageKey,
+                                updatedAt = System.currentTimeMillis()
+                            )
+                            contactDao.updateContact(updatedEntity)
+                            updatedCount++
+                        } else {
+                            skippedCount++
+                        }
+                    } else {
+                        skippedCount++
+                    }
+                    continue
+                }
+
+                existingPhones.add(normalized)
+                var synced = false
+                var sysId: Long? = null
+                val preparedContact = rawContact.copy(
+                    name = finalName,
+                    category = resolvedCategory,
+                    preferredPlatform = resolvedPlatform
+                )
+
+                if (options.alsoSaveToPhonebook) {
+                    val phonebookRes = systemContactsRepository.insertIntoDevicePhonebook(preparedContact)
+                    if (phonebookRes.isSuccess) {
+                        synced = true
+                        sysId = phonebookRes.getOrNull()
+                    }
+                }
+
+                newEntities.add(
+                    preparedContact.copy(
+                        isSyncedToDevice = synced,
+                        systemContactId = sysId
+                    ).toEntity(normalized)
+                )
             }
 
-            if (entities.isNotEmpty()) {
-                contactDao.insertContacts(entities)
-                statsPreferences.incrementImported(entities.size)
+            if (newEntities.isNotEmpty()) {
+                contactDao.insertContacts(newEntities)
             }
-            Result.success(entities.size)
+            val totalChanged = newEntities.size + updatedCount
+            if (totalChanged > 0) {
+                statsPreferences.incrementImported(totalChanged)
+            }
+            Result.success(
+                ImportSummary(
+                    importedCount = newEntities.size,
+                    updatedCount = updatedCount,
+                    skippedCount = skippedCount
+                )
+            )
         } catch (e: Exception) {
             Result.failure(e)
         }

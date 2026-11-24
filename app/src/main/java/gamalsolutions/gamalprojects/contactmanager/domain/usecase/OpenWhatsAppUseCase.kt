@@ -7,7 +7,7 @@ import gamalsolutions.gamalprojects.contactmanager.utils.ShareHelper
 import gamalsolutions.gamalprojects.contactmanager.utils.VCardHelper
 
 /**
- * حالة استخدام للتحقق من صحة الرقم الدولي وفتح محادثة مباشرة عبر wa.me في واتساب أو واتساب للأعمال.
+ * حالة استخدام للتحقق من صحة الرقم الدولي وفتح محادثة مباشرة في واتساب أو واتساب الأعمال أو تيليجرام.
  */
 class OpenWhatsAppUseCase(
     private val context: Context,
@@ -17,15 +17,8 @@ class OpenWhatsAppUseCase(
         rawPhone: String,
         whatsAppType: WhatsAppType
     ): Result<Boolean> {
-        val normalized = VCardHelper.normalizePhone(rawPhone)
-        val digitsOnly = normalized.filter { it.isDigit() }
-
-        // التحقق من الحد الأدنى لطول الرقم الدولي (8 إلى 15 رقماً حسب معيار E.164)
-        if (digitsOnly.length < 8 || digitsOnly.length > 15) {
-            return Result.failure(
-                IllegalArgumentException("Invalid international phone number")
-            )
-        }
+        val digitsOnly = extractValidDigits(rawPhone)
+            ?: return Result.failure(IllegalArgumentException("Invalid international phone number"))
 
         val result = ShareHelper.openWhatsAppChat(
             context = context,
@@ -36,5 +29,25 @@ class OpenWhatsAppUseCase(
             repository.recordWhatsAppOpened()
         }
         return result
+    }
+
+    suspend fun openTelegram(rawPhone: String): Result<Boolean> {
+        val digitsOnly = extractValidDigits(rawPhone)
+            ?: return Result.failure(IllegalArgumentException("Invalid international phone number"))
+
+        val result = ShareHelper.openTelegramChat(
+            context = context,
+            internationalDigits = digitsOnly
+        )
+        if (result.isSuccess) {
+            repository.recordWhatsAppOpened()
+        }
+        return result
+    }
+
+    private fun extractValidDigits(rawPhone: String): String? {
+        val normalized = VCardHelper.normalizePhone(rawPhone)
+        val digitsOnly = normalized.filter { it.isDigit() }
+        return if (digitsOnly.length in 8..15) digitsOnly else null
     }
 }

@@ -5,6 +5,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,16 +32,20 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -60,10 +65,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import gamalsolutions.gamalprojects.R
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactCategory
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactPlatform
 import gamalsolutions.gamalprojects.contactmanager.utils.PermissionHelper
 
 /**
- * شاشة إضافة أو تعديل جهة اتصال مع التحقق الفوري واختيار صورة عبر Android Photo Picker.
+ * شاشة إضافة أو تعديل جهة اتصال مع خيارات التصنيف والمنصة المفضلة والمفضلة واختيار صورة.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -113,6 +120,24 @@ fun EditContactScreen(
                             contentDescription = stringResource(R.string.close)
                         )
                     }
+                },
+                actions = {
+                    IconButton(
+                        onClick = { viewModel.onFavoriteChange(!state.isFavorite) },
+                        modifier = Modifier
+                            .minimumInteractiveComponentSize()
+                            .testTag("edit_favorite_button")
+                    ) {
+                        Icon(
+                            imageVector = if (state.isFavorite) Icons.Filled.Star else Icons.Filled.StarOutline,
+                            contentDescription = stringResource(R.string.favorite_toggle),
+                            tint = if (state.isFavorite) {
+                                MaterialTheme.colorScheme.tertiary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
                 }
             )
         }
@@ -132,7 +157,6 @@ fun EditContactScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-                // قسم الصورة الاختيارية عبر Photo Picker بدون أذونات تخزين
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     modifier = Modifier.fillMaxWidth()
@@ -231,6 +255,50 @@ fun EditContactScreen(
                         .testTag("contact_phone_input")
                 )
 
+                // اختيار التصنيف
+                Text(
+                    text = stringResource(R.string.category_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ContactCategory.entries.forEach { cat ->
+                        FilterChip(
+                            selected = state.category == cat,
+                            onClick = { viewModel.onCategoryChange(cat) },
+                            label = { Text(stringResource(cat.labelRes)) },
+                            modifier = Modifier.testTag("edit_category_${cat.storageKey.lowercase()}")
+                        )
+                    }
+                }
+
+                // اختيار المنصة المفضلة
+                Text(
+                    text = stringResource(R.string.platform_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    ContactPlatform.entries.forEach { plat ->
+                        FilterChip(
+                            selected = state.preferredPlatform == plat,
+                            onClick = { viewModel.onPlatformChange(plat) },
+                            label = { Text(stringResource(plat.labelRes)) },
+                            modifier = Modifier.testTag("edit_platform_${plat.storageKey.lowercase()}")
+                        )
+                    }
+                }
+
                 OutlinedTextField(
                     value = state.email,
                     onValueChange = viewModel::onEmailChange,
@@ -269,6 +337,22 @@ fun EditContactScreen(
                         .fillMaxWidth()
                         .testTag("contact_notes_input")
                 )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = stringResource(R.string.favorite_toggle),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Switch(
+                        checked = state.isFavorite,
+                        onCheckedChange = viewModel::onFavoriteChange,
+                        modifier = Modifier.testTag("edit_favorite_switch")
+                    )
+                }
 
                 if (!state.isSyncedToDevice) {
                     Row(

@@ -9,7 +9,7 @@
     <string name="nav_settings">Settings</string>
 
     <!-- Main Screen -->
-    <string name="search_hint">Search by name, phone, or company…</string>
+    <string name="search_hint">Search by name, phone, company, or category…</string>
     <string name="add_contact">Add Contact</string>
     <string name="edit_contact">Edit Contact</string>
     <string name="sync_device_contacts">Sync Phonebook</string>
@@ -20,11 +20,33 @@
     <string name="export_selected">Export Selected</string>
     <string name="delete_selected">Delete Selected</string>
 
+    <!-- Categories, Platforms & Organization -->
+    <string name="filter_all">All</string>
+    <string name="filter_favorites">Favorites</string>
+    <string name="category_label">Category</string>
+    <string name="category_general">General</string>
+    <string name="category_work">Work</string>
+    <string name="category_family">Family</string>
+    <string name="category_clients">Clients</string>
+    <string name="category_vip">VIP</string>
+
+    <string name="platform_label">Preferred Platform</string>
+    <string name="platform_all">All</string>
+    <string name="platform_whatsapp">WhatsApp</string>
+    <string name="platform_whatsapp_business">WA Business</string>
+    <string name="platform_telegram">Telegram</string>
+
+    <string name="favorite_toggle">Toggle Favorite</string>
+    <string name="batch_organize">Organize Selected</string>
+    <string name="batch_assign_category">Assign Category</string>
+    <string name="batch_assign_platform">Assign Platform</string>
+    <string name="msg_batch_updated">Updated organization for %1$d contacts</string>
+
     <!-- Empty State -->
     <string name="empty_contacts_title">No contacts yet</string>
     <string name="empty_contacts_subtitle">Add a new contact, sync with your phonebook, or import a .vcf file</string>
     <string name="empty_search_title">No matching contacts</string>
-    <string name="empty_search_subtitle">Try searching with a different name or number</string>
+    <string name="empty_search_subtitle">Try changing your search or clearing filters</string>
 
     <!-- Permissions -->
     <string name="permission_contacts_title">Contacts Permission Required</string>
@@ -52,11 +74,21 @@
     <string name="error_phone_invalid">Invalid phone number. Prefer international format like +966501234567</string>
     <string name="error_email_invalid">Invalid email address format</string>
 
-    <!-- Export & Share -->
+    <!-- Export & Share Options -->
     <string name="export_sheet_title">Export &amp; Share Contacts (vCard 3.0)</string>
-    <string name="export_sheet_subtitle">Creates a .vcf file shared securely via FileProvider</string>
-    <string name="export_all_action">Export All Contacts (%1$d)</string>
+    <string name="export_sheet_subtitle">Customize filters and vCard fields before sending to WhatsApp or Telegram</string>
+    <string name="export_all_action">Export (%1$d matching)</string>
     <string name="export_selected_action">Export Selected (%1$d)</string>
+    <string name="export_options_title">Export &amp; Organization Options</string>
+    <string name="export_filter_platform">Filter by Platform</string>
+    <string name="export_filter_category">Filter by Category</string>
+    <string name="export_only_favorites">Favorites Only</string>
+    <string name="export_include_email">Include Email</string>
+    <string name="export_include_company">Include Company &amp; Notes</string>
+    <string name="export_name_prefix">Export Name Prefix (Optional)</string>
+    <string name="export_name_prefix_hint">e.g. WA - or Client -</string>
+    <string name="export_save_to_device">Save .vcf File to Device</string>
+    <string name="msg_export_saved_file">Exported .vcf file saved successfully</string>
     <string name="share_general">General Share (Any App)</string>
     <string name="share_whatsapp">Send to WhatsApp</string>
     <string name="share_whatsapp_business">Send to WhatsApp Business</string>
@@ -64,22 +96,33 @@
     <string name="app_installed">Installed</string>
     <string name="app_not_installed">Not installed (Open Play Store)</string>
 
-    <!-- Import -->
-    <string name="import_title">Import vCard (.vcf)</string>
+    <!-- Import & Organization Options -->
+    <string name="import_title">Import &amp; Organize vCard (.vcf)</string>
     <string name="import_pick_file">Pick .vcf File from Device</string>
-    <string name="import_preview_header">Preview Contacts Before Import</string>
+    <string name="import_source_platform">Tag Source Platform (For Organization)</string>
+    <string name="import_assign_category">Assign Category to Imported</string>
+    <string name="import_duplicate_policy">When phone already exists:</string>
+    <string name="import_duplicate_skip">Skip duplicates</string>
+    <string name="import_duplicate_update">Update existing</string>
+    <string name="import_name_prefix">Add Name Prefix on Import (Optional)</string>
+    <string name="import_preview_header">Preview &amp; Select Contacts to Import</string>
     <string name="import_total_found">Total found in file: %1$d</string>
     <string name="import_new_count">New contacts: %1$d</string>
-    <string name="import_duplicate_count">Duplicates (skipped): %1$d</string>
-    <string name="import_also_phonebook">Also add new contacts to device phonebook</string>
-    <string name="import_confirm">Confirm Import</string>
-    <string name="import_success">Imported %1$d contacts (%2$d duplicates skipped)</string>
+    <string name="import_duplicate_count">Duplicates: %1$d</string>
+    <string name="import_selected_preview">Selected to import: %1$d</string>
+    <string name="import_select_new_only">Select New Only</string>
+    <string name="import_also_phonebook">Also add selected contacts to device phonebook</string>
+    <string name="import_confirm">Confirm Import (%1$d)</string>
+    <string name="import_success">Imported %1$d &amp; updated %2$d contacts (%3$d skipped)</string>
     <string name="import_empty_error">No valid contacts found in this file</string>
+    <string name="import_badge_new">New</string>
+    <string name="import_badge_duplicate">Duplicate</string>
 
-    <!-- WhatsApp & QR -->
-    <string name="open_whatsapp_title">Open WhatsApp Chat</string>
+    <!-- WhatsApp, Telegram & QR -->
+    <string name="open_whatsapp_title">Open Messaging Chat</string>
     <string name="open_whatsapp_normal">WhatsApp</string>
     <string name="open_whatsapp_business">WhatsApp Business</string>
+    <string name="open_telegram_chat">Open in Telegram</string>
     <string name="qr_code_title">Contact QR Code</string>
     <string name="qr_code_subtitle">Scan with any phone camera to add this contact instantly</string>
     <string name="share_vcard_single">Share as vCard (.vcf)</string>
@@ -90,7 +133,7 @@
     <string name="stat_synced_contacts">Synced to Phone</string>
     <string name="stat_exported">vCards Exported</string>
     <string name="stat_imported">Contacts Imported</string>
-    <string name="stat_whatsapp_opened">WhatsApp Chats</string>
+    <string name="stat_whatsapp_opened">Chats Opened</string>
     <string name="backup_restore_title">Backup &amp; Restore</string>
     <string name="backup_create">Create Full Backup (.vcf)</string>
     <string name="backup_restore">Restore from Backup (.vcf)</string>
@@ -107,6 +150,6 @@
     <string name="msg_contact_deleted">Contact deleted</string>
     <string name="msg_sync_done">Synced %1$d contacts from phonebook</string>
     <string name="msg_backup_saved">Backup saved successfully</string>
-    <string name="msg_export_empty">No contacts available to export</string>
+    <string name="msg_export_empty">No matching contacts available to export</string>
     <string name="msg_error_generic">Operation failed: %1$s</string>
 </resources>

@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Label
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Contacts
@@ -66,7 +67,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import gamalsolutions.gamalprojects.contactmanager.data.model.ExportTarget
 import gamalsolutions.gamalprojects.contactmanager.di.AppModule
+import gamalsolutions.gamalprojects.contactmanager.presentation.components.BatchOrganizeDialog
 import gamalsolutions.gamalprojects.contactmanager.presentation.components.ExportBottomSheet
 import gamalsolutions.gamalprojects.contactmanager.presentation.components.QrCodeDialog
 import gamalsolutions.gamalprojects.contactmanager.presentation.components.WhatsAppChooserDialog
@@ -290,7 +293,18 @@ private fun ContactManagerApp(
                                     )
                                 }
                                 IconButton(
-                                    onClick = listViewModel::openExportSheet,
+                                    onClick = listViewModel::openBatchOrganizeDialog,
+                                    modifier = Modifier
+                                        .minimumInteractiveComponentSize()
+                                        .testTag("batch_organize_button")
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.Label,
+                                        contentDescription = stringResource(R.string.batch_organize)
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { listViewModel.openExportSheet() },
                                     modifier = Modifier
                                         .minimumInteractiveComponentSize()
                                         .testTag("export_selected_button")
@@ -350,7 +364,7 @@ private fun ContactManagerApp(
                                     }
                                 }
                                 IconButton(
-                                    onClick = listViewModel::openExportSheet,
+                                    onClick = { listViewModel.openExportSheet() },
                                     modifier = Modifier
                                         .minimumInteractiveComponentSize()
                                         .testTag("top_export_button")
@@ -445,6 +459,10 @@ private fun ContactManagerApp(
                             state = state,
                             onSearchQueryChange = listViewModel::onSearchQueryChange,
                             onToggleSyncedFilter = listViewModel::toggleSyncedFilter,
+                            onPlatformFilterChange = listViewModel::onPlatformFilterChange,
+                            onCategoryFilterChange = listViewModel::onCategoryFilterChange,
+                            onToggleFavoritesFilter = listViewModel::toggleFavoritesFilter,
+                            onToggleFavorite = listViewModel::toggleFavorite,
                             onToggleSelection = listViewModel::toggleSelection,
                             onEditContact = { contact ->
                                 editingContactId = contact.id
@@ -455,7 +473,7 @@ private fun ContactManagerApp(
                             onQrClick = listViewModel::showQrCode,
                             onShareSingleClick = { contact ->
                                 listViewModel.exportAndShare(
-                                    target = gamalsolutions.gamalprojects.contactmanager.data.model.ExportTarget.GENERAL,
+                                    target = ExportTarget.GENERAL,
                                     chooserTitle = chooserTitle,
                                     singleContact = contact
                                 )
@@ -471,10 +489,17 @@ private fun ContactManagerApp(
                     MainTab.TRANSFER -> {
                         ImportExportScreen(
                             state = state,
-                            onOpenExportSheet = listViewModel::openExportSheet,
+                            onOpenExportSheet = { listViewModel.openExportSheet() },
+                            onOpenExportSheetWithPlatform = { platform ->
+                                listViewModel.openExportSheet(initialPlatform = platform)
+                            },
                             onPickVcfFile = { uri -> listViewModel.loadImportPreview(uri) },
-                            onConfirmImport = { alsoPhonebook ->
-                                listViewModel.confirmImport(alsoPhonebook) {
+                            onUpdateImportOptions = listViewModel::updateImportOptions,
+                            onToggleImportItem = listViewModel::toggleImportItem,
+                            onSelectAllImportItems = listViewModel::selectAllImportItems,
+                            onSelectNewImportItemsOnly = listViewModel::selectNewImportItemsOnly,
+                            onConfirmImport = {
+                                listViewModel.confirmImport {
                                     currentTab = MainTab.CONTACTS
                                 }
                             },
@@ -505,10 +530,22 @@ private fun ContactManagerApp(
         ExportBottomSheet(
             exportCount = state.contactsToExport.size,
             isSelectionMode = state.isSelectionMode,
+            exportOptions = state.exportOptions,
+            onUpdateOptions = listViewModel::updateExportOptions,
             onDismiss = listViewModel::closeExportSheet,
             onSelectTarget = { target ->
                 listViewModel.exportAndShare(target = target, chooserTitle = chooserTitle)
-            }
+            },
+            onSaveToUri = listViewModel::saveExportToUri
+        )
+    }
+
+    if (state.showBatchOrganizeDialog) {
+        BatchOrganizeDialog(
+            selectedCount = state.selectedIds.size,
+            onDismiss = listViewModel::dismissBatchOrganizeDialog,
+            onAssignCategory = listViewModel::assignCategoryToSelected,
+            onAssignPlatform = listViewModel::assignPlatformToSelected
         )
     }
 
@@ -519,7 +556,7 @@ private fun ContactManagerApp(
             onShareVCard = {
                 listViewModel.dismissQrCode()
                 listViewModel.exportAndShare(
-                    target = gamalsolutions.gamalprojects.contactmanager.data.model.ExportTarget.GENERAL,
+                    target = ExportTarget.GENERAL,
                     chooserTitle = chooserTitle,
                     singleContact = qrContact
                 )
@@ -531,7 +568,8 @@ private fun ContactManagerApp(
         WhatsAppChooserDialog(
             contact = targetContact,
             onDismiss = listViewModel::dismissWhatsAppChooser,
-            onSelect = { type -> listViewModel.openWhatsApp(targetContact, type) }
+            onSelectWhatsApp = { type -> listViewModel.openWhatsApp(targetContact, type) },
+            onSelectTelegram = { listViewModel.openTelegram(targetContact) }
         )
     }
 }

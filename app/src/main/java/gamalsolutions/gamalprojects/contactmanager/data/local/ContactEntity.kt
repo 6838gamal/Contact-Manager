@@ -4,6 +4,8 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import gamalsolutions.gamalprojects.contactmanager.data.model.Contact
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactCategory
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactPlatform
 
 /**
  * كيان قاعدة بيانات Room لجدول جهات الاتصال المحلية.
@@ -25,6 +27,9 @@ data class ContactEntity(
     val company: String = "",
     val photoUri: String? = null,
     val notes: String = "",
+    val category: String = ContactCategory.GENERAL.storageKey,
+    val preferredPlatform: String = ContactPlatform.ALL.storageKey,
+    val isFavorite: Boolean = false,
     val systemContactId: Long? = null,
     val isSyncedToDevice: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
@@ -39,6 +44,9 @@ fun ContactEntity.toDomain(): Contact = Contact(
     company = company,
     photoUri = photoUri,
     notes = notes,
+    category = ContactCategory.fromKey(category),
+    preferredPlatform = ContactPlatform.fromKey(preferredPlatform),
+    isFavorite = isFavorite,
     systemContactId = systemContactId,
     isSyncedToDevice = isSyncedToDevice,
     createdAt = createdAt,
@@ -54,6 +62,9 @@ fun Contact.toEntity(normalizedPhone: String): ContactEntity = ContactEntity(
     company = company.trim(),
     photoUri = photoUri,
     notes = notes.trim(),
+    category = category.storageKey,
+    preferredPlatform = preferredPlatform.storageKey,
+    isFavorite = isFavorite,
     systemContactId = systemContactId,
     isSyncedToDevice = isSyncedToDevice,
     createdAt = createdAt,

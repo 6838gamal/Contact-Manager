@@ -3,6 +3,10 @@ package gamalsolutions.gamalprojects.contactmanager.presentation.contacts
 import androidx.annotation.StringRes
 import gamalsolutions.gamalprojects.contactmanager.data.model.AppStats
 import gamalsolutions.gamalprojects.contactmanager.data.model.Contact
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactCategory
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactPlatform
+import gamalsolutions.gamalprojects.contactmanager.data.model.ExportOptions
+import gamalsolutions.gamalprojects.contactmanager.data.model.ImportOptions
 import gamalsolutions.gamalprojects.contactmanager.data.model.ImportPreview
 
 /**
@@ -25,6 +29,13 @@ data class ContactListState(
     val isSyncing: Boolean = false,
     val isExportSheetVisible: Boolean = false,
     val showOnlySynced: Boolean = false,
+    val selectedPlatformFilter: ContactPlatform = ContactPlatform.ALL,
+    val selectedCategoryFilter: ContactCategory? = null,
+    val onlyFavoritesFilter: Boolean = false,
+    val exportOptions: ExportOptions = ExportOptions(),
+    val importOptions: ImportOptions = ImportOptions(),
+    val selectedImportKeys: Set<String> = emptySet(),
+    val showBatchOrganizeDialog: Boolean = false,
     val qrContact: Contact? = null,
     val whatsAppTargetContact: Contact? = null,
     val importPreview: ImportPreview? = null,
@@ -35,10 +46,21 @@ data class ContactListState(
     val snackbarMessage: UiMessage? = null
 ) {
     val isSelectionMode: Boolean get() = selectedIds.isNotEmpty()
+
     val contactsToExport: List<Contact>
-        get() = if (selectedIds.isNotEmpty()) {
-            contacts.filter { selectedIds.contains(it.id) }
-        } else {
-            contacts
+        get() {
+            val base = if (selectedIds.isNotEmpty()) {
+                contacts.filter { selectedIds.contains(it.id) }
+            } else {
+                contacts
+            }
+            return base.filter { contact ->
+                val matchesPlatform = exportOptions.platformFilter == ContactPlatform.ALL ||
+                    contact.preferredPlatform == exportOptions.platformFilter
+                val matchesCategory = exportOptions.categoryFilter == null ||
+                    contact.category == exportOptions.categoryFilter
+                val matchesFavorite = !exportOptions.onlyFavorites || contact.isFavorite
+                matchesPlatform && matchesCategory && matchesFavorite
+            }
         }
 }

@@ -1,10 +1,14 @@
 package gamalsolutions.gamalprojects.contactmanager.presentation.import
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,9 +21,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.BusinessCenter
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.FileUpload
 import androidx.compose.material.icons.filled.FolderOpen
@@ -29,16 +35,17 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -46,24 +53,35 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import gamalsolutions.gamalprojects.R
-import gamalsolutions.gamalprojects.contactmanager.data.model.Contact
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactCategory
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactPlatform
+import gamalsolutions.gamalprojects.contactmanager.data.model.DuplicateStrategy
+import gamalsolutions.gamalprojects.contactmanager.data.model.ImportOptions
 import gamalsolutions.gamalprojects.contactmanager.data.model.ImportPreview
+import gamalsolutions.gamalprojects.contactmanager.data.model.ImportPreviewItem
 import gamalsolutions.gamalprojects.contactmanager.presentation.contacts.ContactListState
+import gamalsolutions.gamalprojects.ui.theme.TelegramBlue
+import gamalsolutions.gamalprojects.ui.theme.WhatsAppBusinessTeal
+import gamalsolutions.gamalprojects.ui.theme.WhatsAppGreen
 
 /**
- * شاشة التصدير والاستيراد (vCard .vcf) مع معاينة الجهات ومنع التكرار حسب رقم الهاتف.
+ * شاشة التصدير والاستيراد المخصص (vCard .vcf) مع التحكم في المنصة والتصنيف، سياسة التكرار، واختيار الجهات فردياً.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ImportExportScreen(
     state: ContactListState,
     onOpenExportSheet: () -> Unit,
-    onPickVcfFile: (android.net.Uri) -> Unit,
-    onConfirmImport: (alsoSaveToPhonebook: Boolean) -> Unit,
+    onOpenExportSheetWithPlatform: (ContactPlatform) -> Unit,
+    onPickVcfFile: (Uri) -> Unit,
+    onUpdateImportOptions: (ImportOptions) -> Unit,
+    onToggleImportItem: (String) -> Unit,
+    onSelectAllImportItems: () -> Unit,
+    onSelectNewImportItemsOnly: () -> Unit,
+    onConfirmImport: () -> Unit,
     onClearPreview: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var alsoSaveToPhonebook by remember { mutableStateOf(true) }
-
     val openDocumentLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument()
     ) { uri ->
@@ -72,6 +90,9 @@ fun ImportExportScreen(
         }
     }
 
+    val importOptions = state.importOptions
+    val preview = state.importPreview
+
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.TopCenter
@@ -79,11 +100,12 @@ fun ImportExportScreen(
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .widthIn(max = 680.dp),
+                .widthIn(max = 680.dp)
+                .testTag("import_export_lazy_column"),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // بطاقة التصدير السريع إلى واتساب / تيليجرام / مشاركة عامة
+            // بطاقة التصدير السريع والمخصص إلى واتساب / واتساب الأعمال / تيليجرام
             item {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -116,6 +138,54 @@ fun ImportExportScreen(
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.85f)
                         )
+
+                        // اختصارات تصدير سريعة مفلترة حسب المنصة
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            OutlinedButton(
+                                onClick = { onOpenExportSheetWithPlatform(ContactPlatform.WHATSAPP) },
+                                modifier = Modifier.testTag("quick_export_whatsapp_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Chat,
+                                    contentDescription = null,
+                                    tint = WhatsAppGreen,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(stringResource(R.string.platform_whatsapp))
+                            }
+                            OutlinedButton(
+                                onClick = { onOpenExportSheetWithPlatform(ContactPlatform.WHATSAPP_BUSINESS) },
+                                modifier = Modifier.testTag("quick_export_wab_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.BusinessCenter,
+                                    contentDescription = null,
+                                    tint = WhatsAppBusinessTeal,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(stringResource(R.string.platform_whatsapp_business))
+                            }
+                            OutlinedButton(
+                                onClick = { onOpenExportSheetWithPlatform(ContactPlatform.TELEGRAM) },
+                                modifier = Modifier.testTag("quick_export_telegram_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.Send,
+                                    contentDescription = null,
+                                    tint = TelegramBlue,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(stringResource(R.string.platform_telegram))
+                            }
+                        }
+
                         Button(
                             onClick = onOpenExportSheet,
                             modifier = Modifier
@@ -128,7 +198,7 @@ fun ImportExportScreen(
                             Text(
                                 text = stringResource(
                                     R.string.export_all_action,
-                                    state.contacts.size
+                                    state.contactsToExport.size
                                 )
                             )
                         }
@@ -136,7 +206,7 @@ fun ImportExportScreen(
                 }
             }
 
-            // بطاقة الاستيراد عبر SAF
+            // بطاقة الاستيراد وخيارات التنظيم عبر SAF
             item {
                 Card(
                     colors = CardDefaults.cardColors(
@@ -163,6 +233,111 @@ fun ImportExportScreen(
                                 text = stringResource(R.string.import_title),
                                 style = MaterialTheme.typography.titleMedium
                             )
+                        }
+
+                        // اختيار مصدر الملف (واتساب، واتساب الأعمال، تيليجرام)
+                        Text(
+                            text = stringResource(R.string.import_source_platform),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            ContactPlatform.entries.forEach { plat ->
+                                FilterChip(
+                                    selected = importOptions.sourcePlatform == plat,
+                                    onClick = { onUpdateImportOptions(importOptions.copy(sourcePlatform = plat)) },
+                                    label = { Text(stringResource(plat.labelRes)) },
+                                    modifier = Modifier.testTag("import_opt_platform_${plat.storageKey.lowercase()}")
+                                )
+                            }
+                        }
+
+                        // تصنيف الجهات المستوردة
+                        Text(
+                            text = stringResource(R.string.import_assign_category),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            ContactCategory.entries.forEach { cat ->
+                                FilterChip(
+                                    selected = importOptions.assignCategory == cat,
+                                    onClick = { onUpdateImportOptions(importOptions.copy(assignCategory = cat)) },
+                                    label = { Text(stringResource(cat.labelRes)) },
+                                    modifier = Modifier.testTag("import_opt_cat_${cat.storageKey.lowercase()}")
+                                )
+                            }
+                        }
+
+                        // سياسة الأرقام المكررة
+                        Text(
+                            text = stringResource(R.string.import_duplicate_policy),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            FilterChip(
+                                selected = importOptions.duplicateStrategy == DuplicateStrategy.SKIP,
+                                onClick = {
+                                    onUpdateImportOptions(
+                                        importOptions.copy(duplicateStrategy = DuplicateStrategy.SKIP)
+                                    )
+                                },
+                                label = { Text(stringResource(R.string.import_duplicate_skip)) },
+                                modifier = Modifier.testTag("import_dup_skip_chip")
+                            )
+                            FilterChip(
+                                selected = importOptions.duplicateStrategy == DuplicateStrategy.UPDATE_EXISTING,
+                                onClick = {
+                                    onUpdateImportOptions(
+                                        importOptions.copy(duplicateStrategy = DuplicateStrategy.UPDATE_EXISTING)
+                                    )
+                                },
+                                label = { Text(stringResource(R.string.import_duplicate_update)) },
+                                modifier = Modifier.testTag("import_dup_update_chip")
+                            )
+                        }
+
+                        // بادئة اختيارية للأسماء المستوردة
+                        OutlinedTextField(
+                            value = importOptions.namePrefix,
+                            onValueChange = { onUpdateImportOptions(importOptions.copy(namePrefix = it)) },
+                            label = { Text(stringResource(R.string.import_name_prefix)) },
+                            placeholder = { Text(stringResource(R.string.export_name_prefix_hint)) },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("import_prefix_input")
+                        )
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            listOf("WA -", "WAB -", "TG -").forEach { quickPrefix ->
+                                SuggestionChip(
+                                    onClick = {
+                                        val next = if (importOptions.namePrefix == quickPrefix) "" else quickPrefix
+                                        onUpdateImportOptions(importOptions.copy(namePrefix = next))
+                                    },
+                                    label = { Text(quickPrefix) }
+                                )
+                            }
                         }
 
                         FilledTonalButton(
@@ -192,26 +367,31 @@ fun ImportExportScreen(
                 }
             }
 
-            // قسم معاينة الملف المختار أو الوارد عبر Intent
-            val preview = state.importPreview
+            // قسم معاينة الملف المختار أو الوارد عبر Intent مع إمكانية اختيار كل جهة على حدة
             if (preview != null) {
                 item {
                     ImportPreviewSummaryCard(
                         preview = preview,
-                        alsoSaveToPhonebook = alsoSaveToPhonebook,
+                        selectedCount = state.selectedImportKeys.size,
+                        alsoSaveToPhonebook = importOptions.alsoSaveToPhonebook,
                         isImporting = state.isImporting,
-                        onTogglePhonebook = { alsoSaveToPhonebook = it },
-                        onConfirm = { onConfirmImport(alsoSaveToPhonebook) },
+                        onSelectAll = onSelectAllImportItems,
+                        onSelectNewOnly = onSelectNewImportItemsOnly,
+                        onTogglePhonebook = { checked ->
+                            onUpdateImportOptions(importOptions.copy(alsoSaveToPhonebook = checked))
+                        },
+                        onConfirm = onConfirmImport,
                         onCancel = onClearPreview
                     )
                 }
 
-                items(preview.newContacts, key = { "new_${it.phone}_${it.name}" }) { contact ->
-                    PreviewContactRow(contact = contact, isDuplicate = false)
-                }
-
-                items(preview.duplicateContacts, key = { "dup_${it.phone}_${it.name}" }) { contact ->
-                    PreviewContactRow(contact = contact, isDuplicate = true)
+                items(preview.items, key = { it.key }) { item ->
+                    val isChecked = state.selectedImportKeys.contains(item.key)
+                    PreviewContactRow(
+                        item = item,
+                        isChecked = isChecked,
+                        onToggle = { onToggleImportItem(item.key) }
+                    )
                 }
             }
         }
@@ -221,8 +401,11 @@ fun ImportExportScreen(
 @Composable
 private fun ImportPreviewSummaryCard(
     preview: ImportPreview,
+    selectedCount: Int,
     alsoSaveToPhonebook: Boolean,
     isImporting: Boolean,
+    onSelectAll: () -> Unit,
+    onSelectNewOnly: () -> Unit,
     onTogglePhonebook: (Boolean) -> Unit,
     onConfirm: () -> Unit,
     onCancel: () -> Unit
@@ -249,17 +432,47 @@ private fun ImportPreviewSummaryCard(
                 text = stringResource(R.string.import_total_found, preview.totalCount),
                 style = MaterialTheme.typography.bodyMedium
             )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.import_new_count, preview.newCount),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(R.string.import_duplicate_count, preview.duplicateCount),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
             Text(
-                text = stringResource(R.string.import_new_count, preview.newCount),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.SemiBold
+                text = stringResource(R.string.import_selected_preview, selectedCount),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary
             )
-            Text(
-                text = stringResource(R.string.import_duplicate_count, preview.duplicateCount),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                TextButton(
+                    onClick = onSelectAll,
+                    modifier = Modifier.testTag("import_select_all_button")
+                ) {
+                    Text(stringResource(R.string.select_all))
+                }
+                TextButton(
+                    onClick = onSelectNewOnly,
+                    modifier = Modifier.testTag("import_select_new_only_button")
+                ) {
+                    Text(stringResource(R.string.import_select_new_only))
+                }
+            }
+
+            HorizontalDivider()
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -295,7 +508,7 @@ private fun ImportPreviewSummaryCard(
 
                 Button(
                     onClick = onConfirm,
-                    enabled = !isImporting && preview.newCount > 0,
+                    enabled = !isImporting && selectedCount > 0,
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp)
@@ -308,7 +521,7 @@ private fun ImportPreviewSummaryCard(
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     } else {
-                        Text(text = stringResource(R.string.import_confirm))
+                        Text(text = stringResource(R.string.import_confirm, selectedCount))
                     }
                 }
             }
@@ -318,45 +531,65 @@ private fun ImportPreviewSummaryCard(
 
 @Composable
 private fun PreviewContactRow(
-    contact: Contact,
-    isDuplicate: Boolean
+    item: ImportPreviewItem,
+    isChecked: Boolean,
+    onToggle: () -> Unit
 ) {
     Surface(
+        onClick = onToggle,
         shape = MaterialTheme.shapes.medium,
-        color = if (isDuplicate) {
+        color = if (item.isDuplicate) {
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)
         } else {
             MaterialTheme.colorScheme.surface
         },
         tonalElevation = 1.dp,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("import_preview_row_${item.key}")
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+                .padding(horizontal = 10.dp, vertical = 8.dp)
         ) {
-            Icon(
-                imageVector = if (isDuplicate) Icons.Filled.ContentCopy else Icons.Filled.CheckCircle,
-                contentDescription = null,
-                tint = if (isDuplicate) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.primary
-                },
-                modifier = Modifier.size(20.dp)
+            Checkbox(
+                checked = isChecked,
+                onCheckedChange = { onToggle() },
+                modifier = Modifier.testTag("import_preview_checkbox_${item.key}")
             )
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.width(6.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = contact.name,
+                    text = item.contact.name,
                     style = MaterialTheme.typography.titleSmall
                 )
                 Text(
-                    text = contact.phone,
+                    text = item.contact.phone,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Surface(
+                shape = MaterialTheme.shapes.small,
+                color = if (item.isDuplicate) {
+                    MaterialTheme.colorScheme.surfaceVariant
+                } else {
+                    MaterialTheme.colorScheme.primaryContainer
+                }
+            ) {
+                Text(
+                    text = stringResource(
+                        if (item.isDuplicate) R.string.import_badge_duplicate else R.string.import_badge_new
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (item.isDuplicate) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    },
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
                 )
             }
         }

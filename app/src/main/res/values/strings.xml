@@ -9,7 +9,7 @@
     <string name="nav_settings">الإعدادات</string>
 
     <!-- الشاشة الرئيسية -->
-    <string name="search_hint">ابحث بالاسم، الرقم، أو الشركة…</string>
+    <string name="search_hint">ابحث بالاسم، الرقم، الشركة، أو التصنيف…</string>
     <string name="add_contact">إضافة جهة اتصال</string>
     <string name="edit_contact">تعديل جهة الاتصال</string>
     <string name="sync_device_contacts">مزامنة دفتر الهاتف</string>
@@ -20,11 +20,33 @@
     <string name="export_selected">تصدير المحدد</string>
     <string name="delete_selected">حذف المحدد</string>
 
+    <!-- التصنيفات والمنصات والتنظيم -->
+    <string name="filter_all">الكل</string>
+    <string name="filter_favorites">المفضلة</string>
+    <string name="category_label">التصنيف</string>
+    <string name="category_general">عام</string>
+    <string name="category_work">عمل</string>
+    <string name="category_family">عائلة</string>
+    <string name="category_clients">عملاء</string>
+    <string name="category_vip">VIP</string>
+
+    <string name="platform_label">المنصة المفضلة</string>
+    <string name="platform_all">الكل</string>
+    <string name="platform_whatsapp">WhatsApp</string>
+    <string name="platform_whatsapp_business">WA Business</string>
+    <string name="platform_telegram">Telegram</string>
+
+    <string name="favorite_toggle">إضافة للمفضلة</string>
+    <string name="batch_organize">تنظيم المحدد</string>
+    <string name="batch_assign_category">تعيين تصنيف</string>
+    <string name="batch_assign_platform">تعيين منصة</string>
+    <string name="msg_batch_updated">تم تحديث تنظيم %1$d جهة اتصال</string>
+
     <!-- الحالة الفارغة -->
     <string name="empty_contacts_title">لا توجد جهات اتصال بعد</string>
     <string name="empty_contacts_subtitle">أضف جهة اتصال جديدة، أو قم بالمزامنة مع دفتر الهاتف، أو استورد ملف .vcf</string>
     <string name="empty_search_title">لا توجد نتائج مطابقة</string>
-    <string name="empty_search_subtitle">جرّب البحث باسم أو رقم آخر</string>
+    <string name="empty_search_subtitle">جرّب تغيير البحث أو إزالة الفلاتر</string>
 
     <!-- الأذونات -->
     <string name="permission_contacts_title">إذن الوصول إلى جهات الاتصال</string>
@@ -52,11 +74,21 @@
     <string name="error_phone_invalid">رقم الهاتف غير صالح. يفضّل استخدام الصيغة الدولية مثل +966501234567</string>
     <string name="error_email_invalid">صيغة البريد الإلكتروني غير صحيحة</string>
 
-    <!-- التصدير والمشاركة -->
+    <!-- التصدير والمشاركة وخيارات التخصيص -->
     <string name="export_sheet_title">تصدير ومشاركة جهات الاتصال (vCard 3.0)</string>
-    <string name="export_sheet_subtitle">سيتم إنشاء ملف .vcf ومشاركته بأمان عبر FileProvider</string>
-    <string name="export_all_action">تصدير جميع الجهات (%1$d)</string>
+    <string name="export_sheet_subtitle">خصص الفلتر وحقول vCard قبل الإرسال إلى واتساب أو تيليجرام</string>
+    <string name="export_all_action">تصدير (%1$d جهة مطابقة)</string>
     <string name="export_selected_action">تصدير المحدد (%1$d)</string>
+    <string name="export_options_title">خيارات التصدير والتنظيم</string>
+    <string name="export_filter_platform">تصفية حسب المنصة</string>
+    <string name="export_filter_category">تصفية حسب التصنيف</string>
+    <string name="export_only_favorites">المفضلة فقط</string>
+    <string name="export_include_email">تضمين البريد الإلكتروني</string>
+    <string name="export_include_company">تضمين الشركة والملاحظات</string>
+    <string name="export_name_prefix">بادئة للاسم عند التصدير (اختياري)</string>
+    <string name="export_name_prefix_hint">مثال: WA - أو عميل -</string>
+    <string name="export_save_to_device">حفظ كملف .vcf على الجهاز</string>
+    <string name="msg_export_saved_file">تم حفظ ملف التصدير بنجاح</string>
     <string name="share_general">مشاركة عامة (أي تطبيق)</string>
     <string name="share_whatsapp">إرسال إلى WhatsApp</string>
     <string name="share_whatsapp_business">إرسال إلى WhatsApp Business</string>
@@ -64,22 +96,33 @@
     <string name="app_installed">مثبّت</string>
     <string name="app_not_installed">غير مثبّت (فتح المتجر)</string>
 
-    <!-- الاستيراد -->
-    <string name="import_title">استيراد ملف vCard (.vcf)</string>
+    <!-- الاستيراد وخيارات التنظيم -->
+    <string name="import_title">استيراد وتنظيم ملف vCard (.vcf)</string>
     <string name="import_pick_file">اختيار ملف .vcf من الجهاز</string>
-    <string name="import_preview_header">معاينة الجهات قبل الاستيراد</string>
+    <string name="import_source_platform">تحديد مصدر الملف (لتنظيم الجهات)</string>
+    <string name="import_assign_category">تصنيف الجهات المستوردة</string>
+    <string name="import_duplicate_policy">عند وجود رقم مكرر:</string>
+    <string name="import_duplicate_skip">تخطي المكرر</string>
+    <string name="import_duplicate_update">تحديث البيانات</string>
+    <string name="import_name_prefix">إضافة بادئة للأسماء المستوردة (اختياري)</string>
+    <string name="import_preview_header">معاينة واختيار الجهات قبل الاستيراد</string>
     <string name="import_total_found">إجمالي الجهات في الملف: %1$d</string>
     <string name="import_new_count">جهات جديدة: %1$d</string>
-    <string name="import_duplicate_count">مكررة (سيتم تخطيها): %1$d</string>
-    <string name="import_also_phonebook">إضافة الجهات الجديدة إلى دفتر الهاتف أيضاً</string>
-    <string name="import_confirm">تأكيد الاستيراد</string>
-    <string name="import_success">تم استيراد %1$d جهة اتصال بنجاح (تخطي %2$d مكرر)</string>
+    <string name="import_duplicate_count">مكررة: %1$d</string>
+    <string name="import_selected_preview">سيتم استيراد: %1$d</string>
+    <string name="import_select_new_only">تحديد الجدد فقط</string>
+    <string name="import_also_phonebook">إضافة الجهات المختارة إلى دفتر الهاتف أيضاً</string>
+    <string name="import_confirm">تأكيد الاستيراد (%1$d)</string>
+    <string name="import_success">تم استيراد %1$d وتحديث %2$d جهة اتصال (تخطي %3$d)</string>
     <string name="import_empty_error">لم يتم العثور على جهات اتصال صالحة في الملف</string>
+    <string name="import_badge_new">جديد</string>
+    <string name="import_badge_duplicate">مكرر</string>
 
-    <!-- واتساب و QR -->
+    <!-- واتساب وتيليجرام و QR -->
     <string name="open_whatsapp_title">فتح محادثة واتساب</string>
     <string name="open_whatsapp_normal">WhatsApp العادي</string>
     <string name="open_whatsapp_business">WhatsApp Business</string>
+    <string name="open_telegram_chat">فتح في Telegram</string>
     <string name="qr_code_title">رمز QR لجهة الاتصال</string>
     <string name="qr_code_subtitle">امسح الرمز بكاميرا أي هاتف لإضافة جهة الاتصال فوراً</string>
     <string name="share_vcard_single">مشاركة كملف vCard</string>
@@ -90,7 +133,7 @@
     <string name="stat_synced_contacts">متزامنة مع الهاتف</string>
     <string name="stat_exported">ملفات مصدّرة</string>
     <string name="stat_imported">جهات مستوردة</string>
-    <string name="stat_whatsapp_opened">محادثات واتساب</string>
+    <string name="stat_whatsapp_opened">محادثات مفتوحة</string>
     <string name="backup_restore_title">النسخ الاحتياطي والاستعادة</string>
     <string name="backup_create">إنشاء نسخة احتياطية كاملة (.vcf)</string>
     <string name="backup_restore">استعادة من نسخة احتياطية (.vcf)</string>
@@ -107,6 +150,6 @@
     <string name="msg_contact_deleted">تم حذف جهة الاتصال</string>
     <string name="msg_sync_done">تمت مزامنة %1$d جهة اتصال من دفتر الهاتف</string>
     <string name="msg_backup_saved">تم حفظ النسخة الاحتياطية بنجاح</string>
-    <string name="msg_export_empty">لا توجد جهات اتصال لتصديرها</string>
+    <string name="msg_export_empty">لا توجد جهات اتصال مطابقة لتصديرها</string>
     <string name="msg_error_generic">حدث خطأ أثناء تنفيذ العملية: %1$s</string>
 </resources>

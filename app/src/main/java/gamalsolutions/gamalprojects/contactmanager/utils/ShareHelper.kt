@@ -16,7 +16,7 @@ import gamalsolutions.gamalprojects.contactmanager.data.model.WhatsAppType
  * - لا يمكن قراءة جهات اتصال WhatsApp أو Telegram مباشرةً لأن قواعد بياناتها خاصة ومحمية بصلاحيات النظام (تتطلب Root).
  * - الحل الآمن والمتوافق مع سياسات Google Play هو التصدير والاستيراد عبر معيار vCard (.vcf) ومشاركة Intent.
  * - عند إضافة جهة اتصال إلى دفتر الهاتف (ContactsContract)، تصبح مرئية تلقائياً داخل WhatsApp و Telegram.
- * - التصدير إلى WhatsApp يتم بإرسال ملف .vcf كمرفق عبر Intent.ACTION_SEND مع نوع text/x-vcard.
+ * - التصدير إلى WhatsApp أو Telegram يتم بإرسال ملف .vcf كمرفق عبر Intent.ACTION_SEND مع نوع text/x-vcard.
  */
 object ShareHelper {
 
@@ -37,9 +37,6 @@ object ShareHelper {
         }
     }
 
-    /**
-     * مشاركة ملف .vcf إلى الوجهة المحددة، مع الانتقال لمتجر Play تلقائياً إذا لم يكن التطبيق مثبتاً.
-     */
     fun shareVCardUri(
         context: Context,
         vCardUri: Uri,
@@ -83,9 +80,6 @@ object ShareHelper {
         }
     }
 
-    /**
-     * فتح محادثة واتساب مباشرة عبر رابط wa.me/{number} مع دعم WhatsApp Business.
-     */
     fun openWhatsAppChat(
         context: Context,
         internationalDigits: String,
@@ -102,7 +96,6 @@ object ShareHelper {
             context.startActivity(intent)
             Result.success(true)
         } catch (e: ActivityNotFoundException) {
-            // إذا لم يتوفر التطبيق المستهدف، نفتح عبر المتصفح أو المتجر
             try {
                 val fallback = Intent(
                     Intent.ACTION_VIEW,
@@ -113,6 +106,29 @@ object ShareHelper {
             } catch (ex: Exception) {
                 Result.failure(ex)
             }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * فتح محادثة Telegram مباشرة عبر رابط t.me/+<digits>.
+     */
+    fun openTelegramChat(
+        context: Context,
+        internationalDigits: String
+    ): Result<Boolean> {
+        return try {
+            val url = "https://t.me/+$internationalDigits"
+            val telegramPkg = ExportTarget.TELEGRAM.packageName!!
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url)).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                if (isPackageInstalled(context, telegramPkg)) {
+                    setPackage(telegramPkg)
+                }
+            }
+            context.startActivity(intent)
+            Result.success(true)
         } catch (e: Exception) {
             Result.failure(e)
         }

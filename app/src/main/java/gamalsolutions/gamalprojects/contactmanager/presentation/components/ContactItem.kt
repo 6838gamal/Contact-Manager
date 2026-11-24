@@ -8,6 +8,8 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +25,8 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarOutline
 import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,12 +50,16 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import gamalsolutions.gamalprojects.R
 import gamalsolutions.gamalprojects.contactmanager.data.model.Contact
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactCategory
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactPlatform
+import gamalsolutions.gamalprojects.ui.theme.TelegramBlue
+import gamalsolutions.gamalprojects.ui.theme.WhatsAppBusinessTeal
 import gamalsolutions.gamalprojects.ui.theme.WhatsAppGreen
 
 /**
- * بطاقة عرض جهة اتصال واحدة مع إجراءات سريعة (واتساب، QR، مشاركة، تعديل، حذف) ودعم التحديد المتعدد.
+ * بطاقة عرض جهة اتصال واحدة مع شارات التصنيف والمنصة والمفضلة وإجراءات سريعة.
  */
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 fun ContactItem(
     contact: Contact,
@@ -59,6 +67,7 @@ fun ContactItem(
     isSelectionMode: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
+    onToggleFavorite: () -> Unit,
     onWhatsAppClick: () -> Unit,
     onQrClick: () -> Unit,
     onShareSingleClick: () -> Unit,
@@ -168,14 +177,60 @@ fun ContactItem(
                             )
                         }
                     }
+
+                    if (contact.category != ContactCategory.GENERAL || contact.preferredPlatform != ContactPlatform.ALL) {
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            modifier = Modifier.padding(top = 6.dp)
+                        ) {
+                            if (contact.category != ContactCategory.GENERAL) {
+                                Surface(
+                                    shape = MaterialTheme.shapes.small,
+                                    color = MaterialTheme.colorScheme.secondaryContainer
+                                ) {
+                                    Text(
+                                        text = stringResource(contact.category.labelRes),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                            if (contact.preferredPlatform != ContactPlatform.ALL) {
+                                val platformColor = when (contact.preferredPlatform) {
+                                    ContactPlatform.WHATSAPP -> WhatsAppGreen
+                                    ContactPlatform.WHATSAPP_BUSINESS -> WhatsAppBusinessTeal
+                                    ContactPlatform.TELEGRAM -> TelegramBlue
+                                    ContactPlatform.ALL -> MaterialTheme.colorScheme.primary
+                                }
+                                Surface(
+                                    shape = MaterialTheme.shapes.small,
+                                    color = platformColor.copy(alpha = 0.14f)
+                                ) {
+                                    Text(
+                                        text = stringResource(contact.preferredPlatform.labelRes),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = platformColor,
+                                        fontWeight = FontWeight.SemiBold,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
-                // زر فتح محادثة واتساب مباشرة
                 if (!isSelectionMode) {
+                    val chatAccent = when (contact.preferredPlatform) {
+                        ContactPlatform.TELEGRAM -> TelegramBlue
+                        ContactPlatform.WHATSAPP_BUSINESS -> WhatsAppBusinessTeal
+                        else -> WhatsAppGreen
+                    }
                     Surface(
                         onClick = onWhatsAppClick,
                         shape = CircleShape,
-                        color = WhatsAppGreen.copy(alpha = 0.14f),
+                        color = chatAccent.copy(alpha = 0.14f),
                         modifier = Modifier
                             .minimumInteractiveComponentSize()
                             .testTag("whatsapp_chat_button_${contact.id}")
@@ -187,7 +242,7 @@ fun ContactItem(
                             Icon(
                                 imageVector = Icons.Filled.Chat,
                                 contentDescription = stringResource(R.string.open_whatsapp_title),
-                                tint = WhatsAppGreen,
+                                tint = chatAccent,
                                 modifier = Modifier.size(22.dp)
                             )
                         }
@@ -199,10 +254,26 @@ fun ContactItem(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 8.dp),
+                        .padding(top = 6.dp),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    IconButton(
+                        onClick = onToggleFavorite,
+                        modifier = Modifier
+                            .minimumInteractiveComponentSize()
+                            .testTag("favorite_button_${contact.id}")
+                    ) {
+                        Icon(
+                            imageVector = if (contact.isFavorite) Icons.Filled.Star else Icons.Filled.StarOutline,
+                            contentDescription = stringResource(R.string.favorite_toggle),
+                            tint = if (contact.isFavorite) {
+                                MaterialTheme.colorScheme.tertiary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            }
+                        )
+                    }
                     IconButton(
                         onClick = onQrClick,
                         modifier = Modifier

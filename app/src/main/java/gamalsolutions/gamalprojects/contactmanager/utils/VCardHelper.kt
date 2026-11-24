@@ -1,16 +1,16 @@
 package gamalsolutions.gamalprojects.contactmanager.utils
 
 import gamalsolutions.gamalprojects.contactmanager.data.model.Contact
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactCategory
+import gamalsolutions.gamalprojects.contactmanager.data.model.ExportOptions
 import java.io.ByteArrayOutputStream
 
 /**
- * أداة إنشاء وتحليل ملفات vCard (.vcf) وفق معيار vCard 3.0 مع دعم العربية والترميز Quoted-Printable.
+ * أداة إنشاء وتحليل ملفات vCard (.vcf) وفق معيار vCard 3.0 مع دعم العربية والترميز Quoted-Printable
+ * وخيارات التخصيص (البادئة، إخفاء/تضمين البريد والشركة، وتضمين التصنيف CATEGORIES).
  */
 object VCardHelper {
 
-    /**
-     * توحيد صيغة رقم الهاتف لإزالة المسافات والرموز الزائدة وتسهيل منع التكرار.
-     */
     fun normalizePhone(rawPhone: String): String {
         val trimmed = rawPhone.trim()
         if (trimmed.isEmpty()) return ""
@@ -24,14 +24,14 @@ object VCardHelper {
         }
     }
 
-    /**
-     * تحويل قائمة جهات الاتصال إلى نص vCard 3.0 جاهز للحفظ أو المشاركة.
-     */
-    fun toVCardString(contacts: List<Contact>): String {
+    fun toVCardString(
+        contacts: List<Contact>,
+        options: ExportOptions = ExportOptions()
+    ): String {
         if (contacts.isEmpty()) return ""
         return buildString {
             contacts.forEachIndexed { index, contact ->
-                append(singleContactToVCard(contact))
+                append(singleContactToVCard(contact, options))
                 if (index < contacts.lastIndex) {
                     append("\r\n")
                 }
@@ -39,9 +39,19 @@ object VCardHelper {
         }
     }
 
-    fun singleContactToVCard(contact: Contact): String {
-        val safeName = escapeVCardValue(contact.name.trim())
-        val nameParts = contact.name.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+    fun singleContactToVCard(
+        contact: Contact,
+        options: ExportOptions = ExportOptions()
+    ): String {
+        val prefix = options.namePrefix.trim()
+        val displayName = if (prefix.isNotEmpty() && !contact.name.startsWith(prefix)) {
+            "$prefix ${contact.name.trim()}"
+        } else {
+            contact.name.trim()
+        }
+
+        val safeName = escapeVCardValue(displayName)
+        val nameParts = displayName.split(Regex("\\s+")).filter { it.isNotEmpty() }
         val firstName = escapeVCardValue(nameParts.firstOrNull().orEmpty())
         val lastName = if (nameParts.size > 1) {
             escapeVCardValue(nameParts.drop(1).joinToString(" "))
@@ -57,22 +67,24 @@ object VCardHelper {
             if (contact.phone.isNotBlank()) {
                 append("TEL;TYPE=CELL:").append(contact.phone.trim()).append("\r\n")
             }
-            if (contact.email.isNotBlank()) {
+            if (options.includeEmail && contact.email.isNotBlank()) {
                 append("EMAIL;TYPE=INTERNET:").append(escapeVCardValue(contact.email.trim())).append("\r\n")
             }
-            if (contact.company.isNotBlank()) {
-                append("ORG;CHARSET=UTF-8:").append(escapeVCardValue(contact.company.trim())).append("\r\n")
+            if (options.includeCompanyAndNotes) {
+                if (contact.company.isNotBlank()) {
+                    append("ORG;CHARSET=UTF-8:").append(escapeVCardValue(contact.company.trim())).append("\r\n")
+                }
+                if (contact.notes.isNotBlank()) {
+                    append("NOTE;CHARSET=UTF-8:").append(escapeVCardValue(contact.notes.trim())).append("\r\n")
+                }
             }
-            if (contact.notes.isNotBlank()) {
-                append("NOTE;CHARSET=UTF-8:").append(escapeVCardValue(contact.notes.trim())).append("\r\n")
+            if (contact.category != ContactCategory.GENERAL) {
+                append("CATEGORIES;CHARSET=UTF-8:").append(contact.category.storageKey).append("\r\n")
             }
             append("END:VCARD")
         }
     }
 
-    /**
-     * تحليل محتوى ملف .vcf (يدعم الإصدارات 2.1 و 3.0 و 4.0 وفك الأسطر المطوية و Quoted-Printable).
-     */
     fun parseVCardString(rawContent: String): List<Contact> {
         if (rawContent.isBlank()) return emptyList()
 
@@ -86,6 +98,7 @@ object VCardHelper {
         var email = ""
         var company = ""
         var notes = ""
+        var category = ContactCategory.GENERAL
 
         for (rawLine in unfoldedLines) {
             val line = rawLine.trim()
@@ -97,6 +110,7 @@ object VCardHelper {
                 email = ""
                 company = ""
                 notes = ""
+                category = ContactCategory.GENERAL
                 continue
             }
 
@@ -110,7 +124,8 @@ object VCardHelper {
                                 phone = phone.trim(),
                                 email = email.trim(),
                                 company = company.trim(),
-                                notes = notes.trim()
+                                notes = notes.trim(),
+                                category = category
                             )
                         )
                     }
@@ -158,6 +173,10 @@ object VCardHelper {
                 "EMAIL" -> if (email.isBlank()) email = decodedValue
                 "ORG" -> if (company.isBlank()) company = decodedValue.replace(';', ' ').trim()
                 "NOTE" -> if (notes.isBlank()) notes = decodedValue
+                "CATEGORIES" -> {
+                    val firstCat = decodedValue.split(',').firstOrNull()?.trim()
+                    category = ContactCategory.fromKey(firstCat)
+                }
             }
         }
 

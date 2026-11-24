@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.BusinessCenter
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.AlertDialog
@@ -27,17 +28,19 @@ import androidx.compose.ui.unit.dp
 import gamalsolutions.gamalprojects.R
 import gamalsolutions.gamalprojects.contactmanager.data.model.Contact
 import gamalsolutions.gamalprojects.contactmanager.data.model.WhatsAppType
+import gamalsolutions.gamalprojects.ui.theme.TelegramBlue
 import gamalsolutions.gamalprojects.ui.theme.WhatsAppBusinessTeal
 import gamalsolutions.gamalprojects.ui.theme.WhatsAppGreen
 
 /**
- * نافذة اختيار تطبيق واتساب (العادي أو للأعمال) لفتح محادثة مباشرة عبر wa.me.
+ * نافذة اختيار تطبيق المراسلة (واتساب العادي، واتساب الأعمال، أو تيليجرام) لفتح محادثة مباشرة.
  */
 @Composable
 fun WhatsAppChooserDialog(
     contact: Contact,
     onDismiss: () -> Unit,
-    onSelect: (WhatsAppType) -> Unit
+    onSelectWhatsApp: (WhatsAppType) -> Unit,
+    onSelectTelegram: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -59,7 +62,7 @@ fun WhatsAppChooserDialog(
                 )
 
                 Surface(
-                    onClick = { onSelect(WhatsAppType.STANDARD) },
+                    onClick = { onSelectWhatsApp(WhatsAppType.STANDARD) },
                     shape = MaterialTheme.shapes.medium,
                     color = WhatsAppGreen.copy(alpha = 0.12f),
                     modifier = Modifier
@@ -86,7 +89,7 @@ fun WhatsAppChooserDialog(
                 }
 
                 Surface(
-                    onClick = { onSelect(WhatsAppType.BUSINESS) },
+                    onClick = { onSelectWhatsApp(WhatsAppType.BUSINESS) },
                     shape = MaterialTheme.shapes.medium,
                     color = WhatsAppBusinessTeal.copy(alpha = 0.12f),
                     modifier = Modifier
@@ -107,6 +110,33 @@ fun WhatsAppChooserDialog(
                         Spacer(modifier = Modifier.width(12.dp))
                         Text(
                             text = stringResource(R.string.open_whatsapp_business),
+                            style = MaterialTheme.typography.titleSmall
+                        )
+                    }
+                }
+
+                Surface(
+                    onClick = onSelectTelegram,
+                    shape = MaterialTheme.shapes.medium,
+                    color = TelegramBlue.copy(alpha = 0.12f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .minimumInteractiveComponentSize()
+                        .testTag("open_telegram_chat_button")
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(14.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = null,
+                            tint = TelegramBlue,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = stringResource(R.string.open_telegram_chat),
                             style = MaterialTheme.typography.titleSmall
                         )
                     }

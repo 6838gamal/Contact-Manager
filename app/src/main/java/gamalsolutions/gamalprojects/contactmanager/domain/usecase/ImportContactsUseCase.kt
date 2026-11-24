@@ -2,7 +2,11 @@ package gamalsolutions.gamalprojects.contactmanager.domain.usecase
 
 import android.content.Context
 import android.net.Uri
+import gamalsolutions.gamalprojects.contactmanager.data.model.Contact
+import gamalsolutions.gamalprojects.contactmanager.data.model.ImportOptions
 import gamalsolutions.gamalprojects.contactmanager.data.model.ImportPreview
+import gamalsolutions.gamalprojects.contactmanager.data.model.ImportPreviewItem
+import gamalsolutions.gamalprojects.contactmanager.data.model.ImportSummary
 import gamalsolutions.gamalprojects.contactmanager.data.repository.ContactRepository
 import gamalsolutions.gamalprojects.contactmanager.utils.FileProviderHelper
 import gamalsolutions.gamalprojects.contactmanager.utils.VCardHelper
@@ -10,7 +14,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /**
- * حالة استخدام لمعاينة واستيراد جهات الاتصال من ملف .vcf مع منع التكرار حسب رقم الهاتف.
+ * حالة استخدام لمعاينة واستيراد جهات الاتصال من ملف .vcf مع خيارات التنظيم وسياسة التكرار.
  */
 class ImportContactsUseCase(
     private val context: Context,
@@ -29,37 +33,38 @@ class ImportContactsUseCase(
             return@withContext Result.failure(IllegalArgumentException("No valid contacts in vCard"))
         }
 
-        val existingPhones = repository.getAllNormalizedPhones().toMutableSet()
+        val existingPhones = repository.getAllNormalizedPhones()
         val seenInFile = mutableSetOf<String>()
-        val newContacts = mutableListOf<gamalsolutions.gamalprojects.contactmanager.data.model.Contact>()
-        val duplicateContacts = mutableListOf<gamalsolutions.gamalprojects.contactmanager.data.model.Contact>()
+        val items = mutableListOf<ImportPreviewItem>()
 
-        for (contact in parsed) {
+        parsed.forEachIndexed { index, contact ->
             val norm = VCardHelper.normalizePhone(contact.phone)
-            if (norm.isBlank()) continue
-            if (existingPhones.contains(norm) || !seenInFile.add(norm)) {
-                duplicateContacts.add(contact)
-            } else {
-                newContacts.add(contact)
+            if (norm.isNotBlank()) {
+                val isDuplicate = existingPhones.contains(norm) || !seenInFile.add(norm)
+                items.add(
+                    ImportPreviewItem(
+                        key = "${index}_$norm",
+                        contact = contact,
+                        isDuplicate = isDuplicate
+                    )
+                )
             }
         }
 
-        Result.success(
-            ImportPreview(
-                allParsedContacts = parsed,
-                newContacts = newContacts,
-                duplicateContacts = duplicateContacts
-            )
-        )
+        if (items.isEmpty()) {
+            return@withContext Result.failure(IllegalArgumentException("No valid contacts in vCard"))
+        }
+
+        Result.success(ImportPreview(items = items))
     }
 
     suspend fun confirmImport(
-        preview: ImportPreview,
-        alsoSaveToPhonebook: Boolean
-    ): Result<Int> {
-        return repository.insertImportedContacts(
-            contacts = preview.newContacts,
-            alsoSaveToPhonebook = alsoSaveToPhonebook
+        selectedContacts: List<Contact>,
+        options: ImportOptions
+    ): Result<ImportSummary> {
+        return repository.importContactsWithOptions(
+            contacts = selectedContacts,
+            options = options
         )
     }
 }

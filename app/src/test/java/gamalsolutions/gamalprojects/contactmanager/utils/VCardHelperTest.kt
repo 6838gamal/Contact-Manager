@@ -1,7 +1,12 @@
 package gamalsolutions.gamalprojects.contactmanager.utils
 
 import gamalsolutions.gamalprojects.contactmanager.data.model.Contact
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactCategory
+import gamalsolutions.gamalprojects.contactmanager.data.model.ContactPlatform
+import gamalsolutions.gamalprojects.contactmanager.data.model.ExportOptions
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class VCardHelperTest {
@@ -13,7 +18,8 @@ class VCardHelperTest {
                 name = "أحمد محمد",
                 phone = "+966501234567",
                 email = "ahmed@example.com",
-                company = "شركة التقنية"
+                company = "شركة التقنية",
+                category = ContactCategory.CLIENTS
             ),
             Contact(
                 name = "Sarah Ali",
@@ -30,8 +36,43 @@ class VCardHelperTest {
         assertEquals("+966501234567", parsed[0].phone)
         assertEquals("ahmed@example.com", parsed[0].email)
         assertEquals("شركة التقنية", parsed[0].company)
+        assertEquals(ContactCategory.CLIENTS, parsed[0].category)
         assertEquals("Sarah Ali", parsed[1].name)
         assertEquals("+971 50 987 6543", parsed[1].phone)
+        assertEquals(ContactCategory.GENERAL, parsed[1].category)
+    }
+
+    @Test
+    fun exportOptionsAppliesPrefixAndExcludesOptionalFields() {
+        val contact = Contact(
+            name = "خالد سعيد",
+            phone = "+966551112233",
+            email = "khaled@work.sa",
+            company = "شركة النور",
+            notes = "عميل مهم",
+            category = ContactCategory.VIP,
+            preferredPlatform = ContactPlatform.WHATSAPP_BUSINESS
+        )
+
+        val options = ExportOptions(
+            includeEmail = false,
+            includeCompanyAndNotes = false,
+            namePrefix = "WAB -"
+        )
+
+        val vcf = VCardHelper.singleContactToVCard(contact, options)
+        assertTrue(vcf.contains("FN;CHARSET=UTF-8:WAB - خالد سعيد"))
+        assertFalse(vcf.contains("EMAIL"))
+        assertFalse(vcf.contains("ORG"))
+        assertFalse(vcf.contains("NOTE"))
+        assertTrue(vcf.contains("CATEGORIES;CHARSET=UTF-8:VIP"))
+
+        val parsed = VCardHelper.parseVCardString(vcf)
+        assertEquals(1, parsed.size)
+        assertEquals("WAB - خالد سعيد", parsed[0].name)
+        assertEquals("", parsed[0].email)
+        assertEquals("", parsed[0].company)
+        assertEquals(ContactCategory.VIP, parsed[0].category)
     }
 
     @Test
