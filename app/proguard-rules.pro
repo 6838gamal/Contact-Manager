@@ -1,21 +1,72 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ============================================================
+# إعدادات عامة
+# ============================================================
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# إبقاء معلومات التتبع (مفيد لتحليل الأعطال في الإصدار النهائي)
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# ============================================================
+# OkHttp - تجاهل مزوّدي TLS الاختياريين (سبب فشل البناء)
+# ============================================================
+-dontwarn org.bouncycastle.**
+-dontwarn org.conscrypt.**
+-dontwarn org.openjsse.**
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# ============================================================
+# OkHttp / Retrofit
+# ============================================================
+-dontwarn okhttp3.**
+-dontwarn okio.**
+-keep class okhttp3.** { *; }
+-keep interface okhttp3.** { *; }
+-keep class okio.** { *; }
+
+# Retrofit
+-keepattributes Signature, InnerClasses, EnclosingMethod
+-keepattributes RuntimeVisibleAnnotations, RuntimeVisibleParameterAnnotations
+-keepclassmembers,allowshrinking,allowobfuscation interface * {
+    @retrofit2.http.* <methods>;
+}
+-dontwarn retrofit2.**
+-dontwarn javax.annotation.**
+-keep,allowobfuscation,allowshrinking class retrofit2.Response
+-keep,allowobfuscation,allowshrinking class kotlin.coroutines.Continuation
+
+# ============================================================
+# Kotlin Coroutines
+# ============================================================
+-keepclassmembers class kotlinx.coroutines.** {
+    volatile <fields>;
+}
+-dontwarn kotlinx.coroutines.**
+
+# ============================================================
+# Room Database
+# ============================================================
+-keep class * extends androidx.room.RoomDatabase
+-keep @androidx.room.Entity class *
+-dontwarn androidx.room.paging.**
+
+# ============================================================
+# Jetpack Compose
+# ============================================================
+-dontwarn androidx.compose.**
+-keep class androidx.compose.runtime.** { *; }
+
+# ============================================================
+# Gson (إن كنت تستخدمه)
+# ============================================================
+-keepattributes Signature
+-keepattributes *Annotation*
+-keep class com.google.gson.** { *; }
+-keep class * implements com.google.gson.TypeAdapterFactory
+-keep class * implements com.google.gson.JsonSerializer
+-keep class * implements com.google.gson.JsonDeserializer
+
+# ============================================================
+# أبقِ نماذج البيانات (data classes) الخاصة بالشبكة
+# عدّل اسم الحزمة حسب مشروعك
+# ============================================================
+-keep class gamalsolutions.gamalprojects.contactmanager.network.** { *; }
+-keep class gamalsolutions.gamalprojects.contactmanager.database.** { *; }
